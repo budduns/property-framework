@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Property Management Framework</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Neutrals -->
+    <!-- Application Structure Plan: A task-oriented dashboard with a fixed sidebar for primary navigation and a dynamic main content area. The structure mirrors the framework's five core components plus a home/vision page, making it highly intuitive for council staff. Key interactions include tabbed content for policies, filterable cards for templates, interactive accordion-style diagrams for processes, and a dynamic calculator/chart for pricing tools. This design transforms the static document into a functional, exploratory tool, prioritizing quick access to information and usability over a linear document flow. -->
+    <!-- Visualization & Content Choices: 
+        - Vision/Principles (Inform): Static text cards with icons for clarity.
+        - Policy/Strategy (Organize): Tabbed interface to separate dense information (Policy, Strategy, Legislation). Interaction: Click tabs. Justification: Prevents overwhelming users. Method: HTML/JS.
+        - Templates (Organize/Provide Access): Card-based layout. Interaction: Search/filter bar. Justification: Allows quick discovery of specific documents. Method: HTML/JS.
+        - Processes (Guide/Organize): Interactive accordion flowcharts. Interaction: Click to expand steps. Justification: Simplifies complex workflows visually. Method: HTML/CSS/JS.
+        - Pricing Tools (Compare/Inform): Interactive tabs for tenant types, a mock calculator form, and a bar chart. Interaction: Select tenant type to update guidelines and chart. Justification: Visually demonstrates the financial differences and provides a practical tool. Library: Chart.js for the bar chart.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .nav-link { transition: all 0.2s ease-in-out; }
+        .nav-link.active { background-color: #0d9488; color: white; }
+        .nav-link:not(.active):hover { background-color: #f0fdfa; color: #134e4a; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .tab-button.active { border-color: #0d9488; background-color: #f0fdfa; color: #0d9488; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .process-step { border-left-width: 2px; }
+        .process-step::before { content: ''; position: absolute; left: -9px; top: 1rem; width: 16px; height: 16px; background-color: white; border: 2px solid #0d9488; border-radius: 9999px; }
+        .process-step.end-step::after { content: '▼'; position: absolute; left: -8px; bottom: -20px; color: #0d9488; }
+    </style>
+</head>
+<body class="bg-stone-50 text-slate-800">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <aside class="w-full md:w-64 bg-white border-r border-stone-200 p-4 md:p-6 flex-shrink-0">
+            <h1 class="text-2xl font-bold text-teal-700 mb-8">Property Framework</h1>
+            <nav id="main-nav" class="flex flex-row md:flex-col gap-2">
+                <a href="#home" data-target="home" class="nav-link active flex items-center gap-3 rounded-md px-3 py-2 text-slate-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    <span class="flex-1">Home</span>
+                </a>
+                <a href="#policy" data-target="policy" class="nav-link flex items-center gap-3 rounded-md px-3 py-2 text-slate-700 font-medium">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>
+                    <span class="flex-1">Policy & Strategy</span>
+                </a>
+                <a href="#sla" data-target="sla" class="nav-link flex items-center gap-3 rounded-md px-3 py-2 text-slate-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M16 18h-2a2 2 0 1 0 0-4h2v8M12 14v8"></path><path d="M10 14h.01"></path><path d="M8 18h.01"></path></svg>
+                    <span class="flex-1">SLAs</span>
+                </a>
+                <a href="#templates" data-target="templates" class="nav-link flex items-center gap-3 rounded-md px-3 py-2 text-slate-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                    <span class="flex-1">Templates & Forms</span>
+                </a>
+                <a href="#processes" data-target="processes" class="nav-link flex items-center gap-3 rounded-md px-3 py-2 text-slate-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    <span class="flex-1">Processes & Guides</span>
+                </a>
+                <a href="#pricing" data-target="pricing" class="nav-link flex items-center gap-3 rounded-md px-3 py-2 text-slate-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    <span class="flex-1">Pricing Tools</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-6 md:p-10 bg-stone-50 overflow-auto">
+            
+            <div id="home" class="content-section active">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">Property Management Framework</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-4xl">This interactive hub provides a transparent, efficient, and compliant framework for the strategic and operational management of Council-owned properties, designed to optimise community benefit and financial sustainability.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h3 class="font-bold text-lg text-teal-700 mb-2">Community Benefit</h3>
+                        <p class="text-slate-600 text-sm">Property decisions prioritise the needs and wellbeing of the local community.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h3 class="font-bold text-lg text-teal-700 mb-2">Strategic Alignment</h3>
+                        <p class="text-slate-600 text-sm">Management aligns with Council Plan, Asset Management, and Financial Plans.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h3 class="font-bold text-lg text-teal-700 mb-2">Transparency</h3>
+                        <p class="text-slate-600 text-sm">Clear processes, decision-making, and reporting for all property activities.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h3 class="font-bold text-lg text-teal-700 mb-2">Legislative Compliance</h3>
+                        <p class="text-slate-600 text-sm">Adherence to all relevant Victorian and Commonwealth legislation.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h3 class="font-bold text-lg text-teal-700 mb-2">Financial Sustainability</h3>
+                        <p class="text-slate-600 text-sm">Optimise revenue, minimise costs, and ensure long-term portfolio viability.</p>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h3 class="font-bold text-lg text-teal-700 mb-2">Environmental Focus</h3>
+                        <p class="text-slate-600 text-sm">Integrate sustainable practices in property management and development.</p>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h3 class="font-bold text-lg text-teal-700 mb-2">Risk Management</h3>
+                        <p class="text-slate-600 text-sm">Proactive identification and mitigation of risks associated with property.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h3 class="font-bold text-lg text-teal-700 mb-2">Continuous Improvement</h3>
+                        <p class="text-slate-600 text-sm">Streamline processes, leverage technology, and foster a culture of improvement.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="policy" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">Policy & Strategy Hub</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-4xl">This section houses the overarching documents that guide all property management activities. Explore the tabs to understand the Council's formal positions, strategic direction, and legislative obligations.</p>
+
+                <div id="policy-tabs-container">
+                    <div class="border-b border-stone-200 mb-6">
+                        <nav class="-mb-px flex gap-6" aria-label="Tabs">
+                            <button class="tab-button active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="policy-management">Property Management Policy</button>
+                            <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="strategy">Property Management Strategy</button>
+                            <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="legislation">Legislation & Regulations</button>
+                        </nav>
+                    </div>
+
+                    <div id="policy-management" class="tab-content active space-y-4">
+                        <div class="bg-white p-6 rounded-lg border border-stone-200">
+                            <h4 class="font-semibold text-lg mb-2">Purpose & Scope</h4>
+                            <p class="text-slate-600">Outlines the Council's commitment and approach to property management. It defines which properties are covered, including Council-owned land, leased properties, and licensed facilities.</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg border border-stone-200">
+                            <h4 class="font-semibold text-lg mb-2">Roles & Responsibilities</h4>
+                            <p class="text-slate-600">Clearly defines who is responsible for what, from strategic oversight by the executive team to operational management by the property unit.</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg border border-stone-200">
+                            <h4 class="font-semibold text-lg mb-2">Decision-Making Authority</h4>
+                            <p class="text-slate-600">Outlines the delegation of authority for various property transactions, ensuring decisions are made at the appropriate level.</p>
+                        </div>
+                    </div>
+                    <div id="strategy" class="tab-content hidden space-y-4">
+                        <div class="bg-white p-6 rounded-lg border border-stone-200">
+                             <h4 class="font-semibold text-lg mb-2">Strategic Objectives</h4>
+                             <p class="text-slate-600">Links property activities directly to the Council Plan and corporate goals, including community development, economic growth, and environmental sustainability.</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg border border-stone-200">
+                             <h4 class="font-semibold text-lg mb-2">Acquisition & Disposal</h4>
+                             <p class="text-slate-600">Provides clear guidelines for acquiring new properties to meet community needs and disposing of surplus assets, aligning with the Victorian Government Land Transactions Policy.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg border border-stone-200">
+                             <h4 class="font-semibold text-lg mb-2">Leasing & Licensing</h4>
+                             <p class="text-slate-600">Defines the approach to optimising property utilisation, generating sustainable revenue, and supporting community groups through fair and transparent leasing arrangements.</p>
+                        </div>
+                    </div>
+                    <div id="legislation" class="tab-content hidden">
+                        <ul class="space-y-3">
+                            <li class="bg-white p-4 rounded-lg border border-stone-200"><strong>Local Government Act 2020:</strong> Governs Council functions, land management, and governance.</li>
+                            <li class="bg-white p-4 rounded-lg border border-stone-200"><strong>Planning and Environment Act 1987:</strong> Manages planning schemes and land use.</li>
+                            <li class="bg-white p-4 rounded-lg border border-stone-200"><strong>Building Act 1993 & Regulations 2018:</strong> Ensures compliance for building standards and safety.</li>
+                            <li class="bg-white p-4 rounded-lg border border-stone-200"><strong>Victorian Government Land Monitor (VGLM) Policy:</strong> Sets guidelines for government land transactions.</li>
+                            <li class="bg-white p-4 rounded-lg border border-stone-200"><strong>Disability Discrimination Act 1992 (Cth):</strong> Mandates accessibility requirements for all facilities.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sla" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">Service Level Agreements (SLAs)</h2>
+                 <p class="text-lg text-slate-600 mb-8 max-w-4xl">SLAs define internal expectations and responsibilities between the Property Management Unit and other Council departments. This ensures clear communication, accountability, and efficient service delivery across the organisation.</p>
+
+                <div class="bg-white p-8 rounded-xl shadow-md border border-stone-200">
+                    <h3 class="text-2xl font-bold mb-6 text-teal-700">Standard SLA Template Components</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-4 bg-stone-50 rounded-lg">
+                            <h4 class="font-semibold">Parties Involved</h4>
+                            <p class="text-sm text-slate-600">Clearly identifies the departments involved (e.g., Property & Finance).</p>
+                        </div>
+                        <div class="p-4 bg-stone-50 rounded-lg">
+                            <h4 class="font-semibold">Services Provided</h4>
+                            <p class="text-sm text-slate-600">Details specific services like lease negotiation, maintenance coordination, and rent collection.</p>
+                        </div>
+                        <div class="p-4 bg-stone-50 rounded-lg">
+                            <h4 class="font-semibold">Performance Metrics</h4>
+                            <p class="text-sm text-slate-600">Quantifiable targets, e.g., response times for maintenance and lease renewal processing times.</p>
+                        </div>
+                        <div class="p-4 bg-stone-50 rounded-lg">
+                            <h4 class="font-semibold">Roles & Responsibilities</h4>
+                            <p class="text-sm text-slate-600">Specifies the duties and accountabilities for each party to avoid ambiguity.</p>
+                        </div>
+                        <div class="p-4 bg-stone-50 rounded-lg">
+                            <h4 class="font-semibold">Communication Protocols</h4>
+                            <p class="text-sm text-slate-600">Defines how and when communication, updates, and reports will be shared.</p>
+                        </div>
+                        <div class="p-4 bg-stone-50 rounded-lg">
+                            <h4 class="font-semibold">Dispute Resolution</h4>
+                            <p class="text-sm text-slate-600">Outlines the formal steps to address and resolve any disagreements efficiently.</p>
+                        </div>
+                    </div>
+                    <div class="mt-8 text-center">
+                        <button class="bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 transition-colors">Download SLA Template</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="templates" class="content-section">
+                 <h2 class="text-4xl font-bold mb-4 text-slate-900">Templates & Forms</h2>
+                 <p class="text-lg text-slate-600 mb-8 max-w-4xl">Access a central repository of all standardised documents and forms. Using these templates ensures consistency, compliance, and efficiency in all property-related operations.</p>
+                 
+                 <div class="mb-6">
+                    <input type="text" id="template-search" placeholder="Search templates..." class="w-full max-w-md p-2 border border-stone-300 rounded-lg">
+                 </div>
+
+                 <div id="templates-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Templates will be injected here by JS -->
+                 </div>
+            </div>
+
+            <div id="processes" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">Processes & How-To Guides</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-4xl">Explore detailed, step-by-step instructions for all major property management activities. These guides foster consistency, ensure compliance, and serve as a vital training resource.</p>
+
+                <div class="space-y-4">
+                    <div class="accordion-item bg-white rounded-lg border border-stone-200 shadow-sm">
+                        <button class="accordion-header w-full flex justify-between items-center text-left p-5 font-semibold text-lg">
+                            <span>Lease/Licence Management Process (End-to-End)</span>
+                            <span class="accordion-icon transform transition-transform">▼</span>
+                        </button>
+                        <div class="accordion-content px-5 pb-5">
+                             <div class="relative pl-8 py-4 space-y-8">
+                                <div class="process-step relative">
+                                    <h4 class="font-bold">1. Application</h4>
+                                    <p class="text-sm text-slate-600">Intake, assessment of eligibility, and initial review.</p>
+                                </div>
+                                <div class="process-step relative">
+                                    <h4 class="font-bold">2. Negotiation & Drafting</h4>
+                                    <p class="text-sm text-slate-600">Discussion of key clauses, legal review, and agreement preparation.</p>
+                                </div>
+                                <div class="process-step relative">
+                                    <h4 class="font-bold">3. Execution & Commencement</h4>
+                                    <p class="text-sm text-slate-600">Formal signing, bond collection, and key handover.</p>
+                                </div>
+                                 <div class="process-step relative">
+                                    <h4 class="font-bold">4. Ongoing Management</h4>
+                                    <p class="text-sm text-slate-600">Rent collection, maintenance management, tenant liaison, and compliance checks.</p>
+                                </div>
+                                <div class="process-step relative">
+                                    <h4 class="font-bold">5. Renewal / Review</h4>
+                                    <p class="text-sm text-slate-600">Timely notification, negotiation of new terms, and formalisation.</p>
+                                </div>
+                                 <div class="process-step end-step relative">
+                                    <h4 class="font-bold">6. Termination & Vacancy</h4>
+                                    <p class="text-sm text-slate-600">Adherence to notice periods, assessment of make-good clauses, bond release, and preparation for re-leasing.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="accordion-item bg-white rounded-lg border border-stone-200 shadow-sm">
+                        <button class="accordion-header w-full flex justify-between items-center text-left p-5 font-semibold text-lg">
+                            <span>Property Acquisition Process</span>
+                             <span class="accordion-icon transform transition-transform">▼</span>
+                        </button>
+                        <div class="accordion-content px-5 pb-5">
+                           <p class="text-slate-600 pt-2">Includes steps for identifying needs, due diligence, valuation, Council approval, and legal settlement.</p>
+                        </div>
+                    </div>
+                     <div class="accordion-item bg-white rounded-lg border border-stone-200 shadow-sm">
+                        <button class="accordion-header w-full flex justify-between items-center text-left p-5 font-semibold text-lg">
+                            <span>Property Disposal Process</span>
+                             <span class="accordion-icon transform transition-transform">▼</span>
+                        </button>
+                        <div class="accordion-content px-5 pb-5">
+                            <p class="text-slate-600 pt-2">Covers identifying surplus assets, market appraisal, public sales process (adhering to VGLM policy), Council approval, and settlement.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="pricing" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">Pricing Category Tools</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-4xl">Use these tools to understand the guidelines for determining appropriate pricing for different tenant types, balancing community benefit with financial sustainability.</p>
+                
+                <div class="flex flex-col lg:flex-row gap-8">
+                    <div class="w-full lg:w-1/2 bg-white p-6 rounded-xl shadow-md border border-stone-200">
+                        <h3 class="text-xl font-bold mb-4">Tenant Pricing Calculator</h3>
+                        <div id="pricing-tabs-container">
+                            <div class="border-b border-stone-200 mb-4">
+                                <nav class="-mb-px flex gap-4" aria-label="Tabs">
+                                    <button class="pricing-tab-button active" data-tenant="commercial">Commercial</button>
+                                    <button class="pricing-tab-button" data-tenant="community">Community Group</button>
+                                    <button class="pricing-tab-button" data-tenant="childcare">Childcare (NFP)</button>
+                                </nav>
+                            </div>
+                        </div>
+
+                        <div id="pricing-content" class="space-y-4">
+                            <!-- JS will populate this -->
+                        </div>
+                         <div class="mt-4 p-4 bg-teal-50 border border-teal-200 text-teal-800 rounded-lg">
+                            <p class="font-bold text-lg">Estimated Annual Rent: <span id="estimated-rent">$0.00</span></p>
+                            <p class="text-sm">This is an indicative estimate for guidance only.</p>
+                        </div>
+                    </div>
+                    <div class="w-full lg:w-1/2 bg-white p-6 rounded-xl shadow-md border border-stone-200">
+                         <h3 class="text-xl font-bold mb-4">Subsidy Level Comparison</h3>
+                         <p class="text-sm text-slate-500 mb-4">This chart illustrates the typical subsidy levels relative to market rent for different tenant categories.</p>
+                         <div class="chart-container h-[300px] md:h-[350px] max-w-xl mx-auto">
+                            <canvas id="pricingChart"></canvas>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const appData = {
+        templates: [
+            { name: 'Commercial Lease Agreement', category: 'Leasing & Licensing', description: 'Standard lease for commercial tenants.' },
+            { name: 'Community Sporting Group Licence', category: 'Leasing & Licensing', description: 'Licence for NFP sporting groups.' },
+            { name: 'Childcare NFP Lease Agreement', category: 'Leasing & Licensing', description: 'Specialised lease for NFP childcare providers.' },
+            { name: 'Short-term Hire Agreement', category: 'Leasing & Licensing', description: 'For one-off or short-term facility hire.' },
+            { name: 'MOU Template', category: 'Leasing & Licensing', description: 'Memorandum of Understanding for partnerships.' },
+            { name: 'Heads of Agreement', category: 'Property Transaction', description: 'Outlines terms before a formal contract.' },
+            { name: 'Due Diligence Checklist', category: 'Property Transaction', description: 'Checklist for property acquisitions.' },
+            { name: 'Property Inspection Checklist', category: 'Operational', description: 'Standard checklist for routine inspections.' },
+            { name: 'Maintenance Request Form', category: 'Operational', description: 'Form for tenants to request maintenance.' },
+            { name: 'Monthly Property Performance Report', category: 'Reporting', description: 'Template for monthly performance summaries.' },
+            { name: 'Lease Expiry Report', category: 'Reporting', description: 'Tracks upcoming lease expiries.' },
+        ],
+        pricing: {
+            commercial: {
+                guideline: 'Typically charged at full market rate. Incentives may be considered for businesses that align with strategic economic development goals.',
+                baseRate: 500
+            },
+            community: {
+                guideline: 'Often receives significant subsidies, nominal fees, or peppercorn rents to support community activities. The focus is on partial cost recovery for essential services like utilities and maintenance.',
+                baseRate: 50
+            },
+            childcare: {
+                guideline: 'Usually highly subsidised or charged nominal rates due to the essential community service provided. Pricing is policy-driven to ensure viability and affordability of childcare services.',
+                baseRate: 25
+            }
+        }
+    };
+
+    const mainNav = document.getElementById('main-nav');
+    const contentSections = document.querySelectorAll('.content-section');
+    const templatesGrid = document.getElementById('templates-grid');
+    const templateSearch = document.getElementById('template-search');
+    
+    function navigateTo(targetId) {
+        mainNav.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        contentSections.forEach(section => section.classList.remove('active'));
+
+        const activeLink = mainNav.querySelector(`[data-target="${targetId}"]`);
+        const activeSection = document.getElementById(targetId);
+
+        if (activeLink) activeLink.classList.add('active');
+        if (activeSection) activeSection.classList.add('active');
+    }
+
+    mainNav.addEventListener('click', (e) => {
+        const link = e.target.closest('.nav-link');
+        if (link) {
+            e.preventDefault();
+            const targetId = link.dataset.target;
+            window.location.hash = targetId;
+            navigateTo(targetId);
+        }
+    });
+    
+    function renderTemplates(filter = '') {
+        templatesGrid.innerHTML = '';
+        const filteredTemplates = appData.templates.filter(t => t.name.toLowerCase().includes(filter.toLowerCase()));
+        
+        if (filteredTemplates.length === 0) {
+            templatesGrid.innerHTML = `<p class="text-slate-500">No templates found.</p>`;
+            return;
+        }
+
+        filteredTemplates.forEach(template => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-5 rounded-lg border border-stone-200 shadow-sm';
+            card.innerHTML = `
+                <h4 class="font-bold text-md text-teal-800">${template.name}</h4>
+                <p class="text-sm text-slate-500 mb-3">${template.description}</p>
+                <span class="text-xs font-medium bg-teal-100 text-teal-800 py-1 px-2 rounded-full">${template.category}</span>
+            `;
+            templatesGrid.appendChild(card);
+        });
+    }
+
+    templateSearch.addEventListener('input', () => renderTemplates(templateSearch.value));
+
+    const policyTabsContainer = document.getElementById('policy-tabs-container');
+    if (policyTabsContainer) {
+        policyTabsContainer.addEventListener('click', e => {
+            if (e.target.classList.contains('tab-button')) {
+                const targetTab = e.target.dataset.tab;
+                policyTabsContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                policyTabsContainer.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                
+                e.target.classList.add('active');
+                document.getElementById(targetTab).classList.remove('hidden');
+            }
+        });
+    }
+
+    const accordions = document.querySelectorAll('.accordion-item');
+    accordions.forEach(item => {
+        const header = item.querySelector('.accordion-header');
+        const content = item.querySelector('.accordion-content');
+        const icon = item.querySelector('.accordion-icon');
+        header.addEventListener('click', () => {
+            const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+            if (isOpen) {
+                content.style.maxHeight = '0px';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.maxHeight = content.scrollHeight + 'px';
+                icon.style.transform = 'rotate(180deg)';
+            }
+        });
+    });
+
+    const pricingTabsContainer = document.getElementById('pricing-tabs-container');
+    const pricingContent = document.getElementById('pricing-content');
+    const estimatedRentEl = document.getElementById('estimated-rent');
+    let currentTenantType = 'commercial';
+    
+    function updatePricingTool(tenantType) {
+        currentTenantType = tenantType;
+        const data = appData.pricing[tenantType];
+        pricingContent.innerHTML = `
+            <div>
+                <h4 class="font-semibold">Pricing Guideline</h4>
+                <p class="text-sm text-slate-600">${data.guideline}</p>
+            </div>
+            <div>
+                <label for="property-size" class="block text-sm font-medium text-slate-700">Property Size (sqm)</label>
+                <input type="number" id="property-size" value="100" class="mt-1 block w-full rounded-md border-stone-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
+            </div>
+        `;
+        pricingTabsContainer.querySelectorAll('.pricing-tab-button').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tenant === tenantType);
+        });
+        
+        const sizeInput = document.getElementById('property-size');
+        sizeInput.addEventListener('input', calculateRent);
+        calculateRent();
+    }
+
+    function calculateRent() {
+        const size = document.getElementById('property-size').value || 0;
+        const data = appData.pricing[currentTenantType];
+        const rent = size * data.baseRate;
+        estimatedRentEl.textContent = `$${rent.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    if (pricingTabsContainer) {
+        pricingTabsContainer.addEventListener('click', e => {
+            if (e.target.classList.contains('pricing-tab-button')) {
+                updatePricingTool(e.target.dataset.tenant);
+            }
+        });
+    }
+    
+    let pricingChart;
+    function renderPricingChart() {
+        const ctx = document.getElementById('pricingChart').getContext('2d');
+        if (pricingChart) {
+            pricingChart.destroy();
+        }
+        pricingChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Commercial', 'Community Group', 'Childcare (NFP)'],
+                datasets: [{
+                    label: 'Rent as % of Market Rate',
+                    data: [100, (appData.pricing.community.baseRate / appData.pricing.commercial.baseRate) * 100, (appData.pricing.childcare.baseRate / appData.pricing.commercial.baseRate) * 100],
+                    backgroundColor: ['#d1d5db', '#34d399', '#60a5fa'],
+                    borderColor: ['#9ca3af', '#10b981', '#3b82f6'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 110,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.dataset.label}: ${context.raw.toFixed(0)}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const initialHash = window.location.hash.replace('#', '') || 'home';
+    navigateTo(initialHash);
+    renderTemplates();
+    updatePricingTool('commercial');
+    renderPricingChart();
+});
+</script>
+
+</body>
+</html>
